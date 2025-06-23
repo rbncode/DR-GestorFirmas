@@ -1,6 +1,6 @@
 # Dirección de Proyectos - Gestor de Firmas
 
-- Proyecto de gestor de firmas de recursos humanos.
+Proyecto de gestor de firmas de recursos humanos.
 
 - Integrantes:
   - Francisca Neira
