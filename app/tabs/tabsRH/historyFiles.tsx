@@ -3,11 +3,11 @@ import { useRouter } from 'expo-router';
 
 // solicitudes ahora con campo "empleado"
 const solicitudes = [
-  { id: '1', documento: 'Vacaciones junio', empleado: 'Pedro Pérez', supervisor: 'Carlos Ruiz', estado: 'pendiente', fecha: '2024-06-15' },
-  { id: '2', documento: 'Licencia', empleado: 'Pedro Pérez', supervisor: 'Carlos Ruiz', estado: 'pendiente', fecha: '2024-06-20' },
-  { id: '3', documento: 'Cambio horario', empleado: 'Maria Hernandez', supervisor: 'Carlos Ruiz', estado: 'pendiente', fecha: '2024-06-22' },
-  { id: '4', documento: 'Permiso especial', empleado: 'Carlos Ruiz', supervisor: 'Juan Soto', estado: 'aprobado', fecha: '2024-06-25' },
-  { id: '5', documento: 'Licencia médica', empleado: 'Carlos Ruiz', supervisor: 'Juan Soto', estado: 'pendiente', fecha: '2024-06-27' },
+  { id: '1', documento: 'Vacaciones junio', empleado: 'Pedro Pérez', supervisor: 'Carlos Ruiz', estado: 'rechazado', fecha: '2024-06-15', recursosHumanos:'Juan Lopez' },
+  { id: '2', documento: 'Licencia', empleado: 'Pedro Pérez', supervisor: 'Carlos Ruiz', estado: 'rechazado', fecha: '2024-06-20', recursosHumanos:'Pedro Perez' },
+  { id: '3', documento: 'Cambio horario', empleado: 'Maria Hernandez', supervisor: 'Carlos Ruiz', estado: 'aprobado', fecha: '2024-06-22', recursosHumanos:'Juan Lopez' },
+  { id: '4', documento: 'Permiso especial', empleado: 'Carlos Ruiz', supervisor: 'Juan Soto', estado: 'aprobado', fecha: '2024-06-25', recursosHumanos:'Juana Perez' },
+  { id: '5', documento: 'Licencia médica', empleado: 'Carlos Ruiz', supervisor: 'Juan Soto', estado: 'aprobado', fecha: '2024-06-27', recursosHumanos:'Mario González' },
 ];
 
 // supervisor logueado
@@ -25,25 +25,14 @@ export default function HomePageSupervisor() {
     //router.push(`/tabs/tabSupervisor/verMiSolicitud?id=${solicitudId}`);
   };
 
-  const renderRowRevision = (item: typeof solicitudes[0]) => (
-    <View style={styles.row} key={item.id}>
-      <Text style={styles.cell}>{item.id}</Text>
-      <Text style={styles.cell}>{item.documento}</Text>
-      <Text style={styles.cell}>{item.empleado}</Text>
-      <Text style={styles.cell}>{item.estado}</Text>
-      <Text style={styles.cell}>{item.fecha}</Text>
-      <TouchableOpacity style={styles.button} onPress={() => irADetalleRevision(item.id)}>
-        <Text style={styles.buttonText}>Revisar</Text>
-      </TouchableOpacity>
-    </View>
-  );
-
   const renderRowPropia = (item: typeof solicitudes[0]) => (
     <View style={styles.row} key={item.id}>
       <Text style={styles.cell}>{item.id}</Text>
       <Text style={styles.cell}>{item.documento}</Text>
-      <Text style={styles.cell}>{item.estado}</Text>
-      <Text style={styles.cell}>{item.fecha}</Text>
+      <Text style={styles.cell}>{item.supervisor}</Text>
+        <Text style={styles.cell}>{item.recursosHumanos}</Text>
+        <Text style={styles.cell}>{item.fecha}</Text>
+        <Text style={styles.cell}>{item.estado}</Text>
       <TouchableOpacity style={styles.button} onPress={() => irADetallePropia(item.id)}>
         <Text style={styles.buttonText}>Ver</Text>
       </TouchableOpacity>
@@ -55,40 +44,24 @@ export default function HomePageSupervisor() {
     s => s.estado === 'pendiente' && s.supervisor === supervisorActual
   );
 
-  // solicitudes que él mismo subió (como empleado)
-  const solicitudesPropias = solicitudes.filter(
-    s => s.empleado === supervisorActual
-  );
-
+  
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>Panel Recursos Humanos</Text>
-
-      {/* Solicitudes pendientes de revisión */}
-      <View style={styles.tableContainer}>
-        <Text style={styles.subtitle}>Solicitudes Pendientes de Revisión</Text>
-        <View style={styles.headerRow}>
-          <Text style={styles.headerCell}>#</Text>
-          <Text style={styles.headerCell}>Solicitud</Text>
-          <Text style={styles.headerCell}>Empleado</Text>
-          <Text style={styles.headerCell}>Estado</Text>
-          <Text style={styles.headerCell}>Fecha</Text>
-          <Text style={styles.headerCell}></Text>
-        </View>
-        {solicitudesPendientesRevision.map(renderRowRevision)}
-      </View>
+      <Text style={styles.title}>Historial de Solicitudes</Text>
 
       {/* Solicitudes propias */}
       <View style={styles.tableContainer}>
         <Text style={styles.subtitle}>Mis Solicitudes</Text>
         <View style={styles.headerRow}>
-          <Text style={styles.headerCell}>#</Text>
+            <Text style={styles.headerCell}></Text>
+          <Text style={styles.headerCell}>id</Text>
           <Text style={styles.headerCell}>Solicitud</Text>
-          <Text style={styles.headerCell}>Estado</Text>
-          <Text style={styles.headerCell}>Fecha</Text>
-          <Text style={styles.headerCell}></Text>
+          <Text style={styles.headerCell}>Supervisor</Text>
+          <Text style={styles.headerCell}>Recursos Humanos</Text>
+          <Text style={styles.headerCell}>fecha</Text>
+          <Text style={styles.headerCell}>estado</Text>
         </View>
-        {solicitudesPropias.map(renderRowPropia)}
+        {solicitudes.map(renderRowPropia)}
       </View>
     </ScrollView>
   );

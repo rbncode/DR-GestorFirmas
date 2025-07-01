@@ -34,6 +34,10 @@ export default function RootLayout() {
         router.replace('/tabs/tabsRH/homePageRH');
     };
 
+    const historial = () => {
+        router.replace('/tabs/tabsRH/historyFiles');
+    };
+
   return (
     <View style={{ flex: 1 }}>
       {!hideNavbar && (
@@ -49,6 +53,9 @@ export default function RootLayout() {
             </TouchableOpacity>
             <TouchableOpacity style={styles.button} onPress={VerPendientes}>
                 <Text style={styles.buttonText}>Ver mis pendientes</Text>
+            </TouchableOpacity>
+             <TouchableOpacity style={styles.button} onPress={historial}>
+                <Text style={styles.buttonText}>Historial</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.button} onPress={cerrarSesion}>
                 <Text style={styles.buttonText}>Cerrrar Sesión</Text>
