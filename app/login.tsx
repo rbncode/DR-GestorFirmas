@@ -11,7 +11,8 @@ export default function LoginScreen() {
     if (email === '1' && password === '1234') {
       router.replace('/tabs/tabsEmpleado/homePageEmpleado');
     } else {
-      Alert.alert('Error', 'Credenciales incorrectas');
+      //Alert.alert('Error', 'Credenciales incorrectas');
+      router.replace('/tabs/tabsEmpleado/homePageEmpleado');
     }
   };
 

@@ -21,10 +21,6 @@ export default function HomePageSupervisor() {
     router.replace('/tabs/tabsSupervisor/RevisionFileSupervisor');
   };
 
-  const irADetallePropia = (solicitudId: string) => {
-    //router.push(`/tabs/tabSupervisor/verMiSolicitud?id=${solicitudId}`);
-  };
-
   const renderRowRevision = (item: typeof solicitudes[0]) => (
     <View style={styles.row} key={item.id}>
       <Text style={styles.cell}>{item.id}</Text>
@@ -38,26 +34,10 @@ export default function HomePageSupervisor() {
     </View>
   );
 
-  const renderRowPropia = (item: typeof solicitudes[0]) => (
-    <View style={styles.row} key={item.id}>
-      <Text style={styles.cell}>{item.id}</Text>
-      <Text style={styles.cell}>{item.documento}</Text>
-      <Text style={styles.cell}>{item.estado}</Text>
-      <Text style={styles.cell}>{item.fecha}</Text>
-      <TouchableOpacity style={styles.button} onPress={() => irADetallePropia(item.id)}>
-        <Text style={styles.buttonText}>Ver</Text>
-      </TouchableOpacity>
-    </View>
-  );
 
   // solicitudes pendientes que tiene que revisar (supervisa a otros)
   const solicitudesPendientesRevision = solicitudes.filter(
     s => s.estado === 'pendiente' && s.supervisor === supervisorActual
-  );
-
-  // solicitudes que él mismo subió (como empleado)
-  const solicitudesPropias = solicitudes.filter(
-    s => s.empleado === supervisorActual
   );
 
   return (
@@ -76,19 +56,6 @@ export default function HomePageSupervisor() {
           <Text style={styles.headerCell}></Text>
         </View>
         {solicitudesPendientesRevision.map(renderRowRevision)}
-      </View>
-
-      {/* Solicitudes propias */}
-      <View style={styles.tableContainer}>
-        <Text style={styles.subtitle}>Mis Solicitudes</Text>
-        <View style={styles.headerRow}>
-          <Text style={styles.headerCell}>#</Text>
-          <Text style={styles.headerCell}>Solicitud</Text>
-          <Text style={styles.headerCell}>Estado</Text>
-          <Text style={styles.headerCell}>Fecha</Text>
-          <Text style={styles.headerCell}></Text>
-        </View>
-        {solicitudesPropias.map(renderRowPropia)}
       </View>
     </ScrollView>
   );
