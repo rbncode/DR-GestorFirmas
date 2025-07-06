@@ -1,8 +1,11 @@
 from typing import List, Optional
 from bson import ObjectId
 from bson.errors import InvalidId
-from .modelos import Usuario, UsuarioWithId, Solicitudes, SolicitudCreate
+from datetime import datetime
+from .modelos import Usuario, UsuarioWithId, Solicitudes, SolicitudCreate, DocumentoFirmado, DocumentoUpload, FirmaDocumento
 from .mongodb import mongodb
+from .gridfs_manager import gridfs
+
 SOLICITUDES_COLLECTION = 'Solicitudes'
 USUARIOS_COLLECTION = 'Usuarios'
 
@@ -202,3 +205,128 @@ async def update_solicitud(id: str, update_data: dict) -> bool:
     except Exception as error:
         print(f"Error updating solicitud: {error}")
         return False
+
+#Metodos para ingresar Documentos
+
+async def upload_documento(file_data: bytes, documento_info: DocumentoUpload) -> str:
+    """Subir un documento a GridFS"""
+    try:
+        # Preparar metadatos
+        metadata = {
+            'solicitud_id': documento_info.solicitud_id,
+            'content_type': documento_info.content_type,
+            'tipo': 'documento',
+            'firmado': False,
+            'estado': 'pendiente'
+        }
+        
+        # Agregar metadatos adicionales si los hay
+        if documento_info.metadata:
+            metadata.update(documento_info.metadata)
+        
+        # Subir archivo usando GridFS
+        file_id = await gridfs.upload_file(
+            file_data=file_data,
+            filename=documento_info.filename,
+            metadata=metadata
+        )
+        
+        # Actualizar la solicitud con el ID del documento
+        await update_solicitud(documento_info.solicitud_id, {'documentoId': file_id})
+        
+        return file_id
+        
+    except Exception as error:
+        print(f"Error uploading documento: {error}")
+        raise error
+
+async def get_documento_by_id(documento_id: str) -> Optional[DocumentoFirmado]:
+    """Obtener un documento por ID"""
+    try:
+        file_data = await gridfs.download_file(documento_id)
+        if file_data:
+            return from_gridfs_documento(file_data)
+        return None
+    except Exception as error:
+        print(f"Error fetching documento: {error}")
+        return None
+
+async def download_documento(documento_id: str) -> Optional[dict]:
+    """Descargar un documento completo con sus datos"""
+    try:
+        return await gridfs.download_file(documento_id)
+    except Exception as error:
+        print(f"Error downloading documento: {error}")
+        return None
+
+async def get_documentos_by_solicitud(solicitud_id: str) -> List[DocumentoFirmado]:
+    """Obtener todos los documentos de una solicitud"""
+    try:
+        filter_metadata = {'solicitud_id': solicitud_id}
+        files = await gridfs.list_files(filter_metadata)
+        
+        return [from_gridfs_documento(file_data) for file_data in files]
+    except Exception as error:
+        print(f"Error fetching documentos by solicitud: {error}")
+        return []
+
+async def firmar_documento(firma_data: FirmaDocumento) -> bool:
+    """Firmar un documento"""
+    try:
+        # Obtener metadatos actuales
+        file_data = await gridfs.download_file(firma_data.documento_id)
+        if not file_data:
+            return False
+        
+        # Actualizar metadatos con información de firma
+        new_metadata = file_data['metadata'].copy()
+        new_metadata.update({
+            'firmado': True,
+            'firmado_por': firma_data.firmado_por,
+            'fecha_firma': firma_data.fecha_firma,
+            'estado': 'firmado'
+        })
+        
+        # Agregar metadatos adicionales de firma si los hay
+        if firma_data.metadata_firma:
+            new_metadata.update(firma_data.metadata_firma)
+        
+        # Actualizar metadatos
+        return await gridfs.update_file_metadata(
+            firma_data.documento_id, 
+            new_metadata
+        )
+        
+    except Exception as error:
+        print(f"Error firmando documento: {error}")
+        return False
+
+async def delete_documento(documento_id: str) -> bool:
+    """Eliminar un documento"""
+    try:
+        return await gridfs.delete_file(documento_id)
+    except Exception as error:
+        print(f"Error deleting documento: {error}")
+        return False
+
+async def get_documentos_firmados() -> List[DocumentoFirmado]:
+    """Obtener todos los documentos firmados"""
+    try:
+        filter_metadata = {'firmado': True}
+        files = await gridfs.list_files(filter_metadata)
+        
+        return [from_gridfs_documento(file_data) for file_data in files]
+    except Exception as error:
+        print(f"Error fetching documentos firmados: {error}")
+        return []
+
+async def get_documentos_pendientes() -> List[DocumentoFirmado]:
+    """Obtener todos los documentos pendientes de firma"""
+    try:
+        filter_metadata = {'firmado': False}
+        files = await gridfs.list_files(filter_metadata)
+        
+        return [from_gridfs_documento(file_data) for file_data in files]
+    except Exception as error:
+        print(f"Error fetching documentos pendientes: {error}")
+        return []
