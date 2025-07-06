@@ -12,4 +12,4 @@ COPY . .
 EXPOSE 8081
 
 # Comando para iniciar la app (ajusta si usas otro script)
-CMD ["npm", "start"]
+CMD ["npm", "run", "iniciar"]

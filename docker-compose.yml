@@ -6,11 +6,11 @@ services:
     build: .
     ports:
       - "8081:8081"
-    enviroment:
+    environment:
       - MONGODB_URI=mongodb://root:rootpass@database:27017/?authSource=admin
       - MONGODB_DB=FirmaSimple
     depends_on:
-      - back
+      - database
     restart: unless-stopped
   
   database:
@@ -18,7 +18,7 @@ services:
     container_name: FirmaSimpleDB
     ports:
       - "27017:27017"
-    enviroment:
+    environment:
       - MONGO_INITDB_ROOT_USERNAME=root
       - MONGO_INITDB_ROOT_PASSWORD=rootpass
       - MONGO_INITDB_DATABASE=FirmaSimple
