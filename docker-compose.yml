@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  application:
+    container_name: FirmaSimpleAPP
+    build: .
+    ports:
+      - "8081:8081"
+    environment:
+      - MONGODB_URI=mongodb://root:rootpass@database:27017/?authSource=admin
+      - MONGODB_DB=FirmaSimple
+    depends_on:
+      - database
+    restart: unless-stopped
+  
+  database:
+    image: mongo:latest
+    container_name: FirmaSimpleDB
+    ports:
+      - "27017:27017"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=root
+      - MONGO_INITDB_ROOT_PASSWORD=rootpass
+      - MONGO_INITDB_DATABASE=FirmaSimple
+    volumes:
+      - mongo_data:/data/db
+    restart: unless-stopped
+volumes:
+  mongo_data:
