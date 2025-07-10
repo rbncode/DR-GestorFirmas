@@ -1,5 +1,6 @@
-import { ScrollView, View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 const solicitudes = [
   { id: '1', documento: 'Vacaciones junio', supervisor: 'Carlos Ruiz', estado: 'aprobado', fecha: '2024-06-15' },
@@ -11,18 +12,31 @@ const solicitudes = [
 
 export default function HomePage() {
   const router = useRouter();
+  const [solicitudes, setSolicitudes] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch('http://localhost:8080/api/solicitudes')
+      .then(res => res.json())
+      .then(data => setSolicitudes(data))
+      .catch(err => {
+        Alert.alert('Error', 'No se pudieron cargar las solicitudes');
+        console.error(err);
+      })
+      .finally(() => setLoading(false));
+  }, []);
 
   const irADetalle = (solicitudId: string) => {
     console.log("redirecciona", solicitudId);
   };
 
-  const renderRow = (item: typeof solicitudes[0]) => (
+  const renderRow = (item: any) => (
     <View style={styles.row} key={item.id}>
       <Text style={styles.cell}>{item.id}</Text>
-      <Text style={styles.cell}>{item.documento}</Text>
-      <Text style={styles.cell}>{item.supervisor}</Text>
-      <Text style={styles.cell}>{item.estado}</Text>
-      <Text style={styles.cell}>{item.fecha}</Text>
+      <Text style={styles.cell}>{item.titulo}</Text>
+      <Text style={styles.cell}>{item.supervisor?.nombre || '-'}</Text>
+      <Text style={styles.cell}>{item.estado || '-'}</Text>
+      <Text style={styles.cell}>{item.fecha?.slice(0, 10) || '-'}</Text>
       <TouchableOpacity style={styles.button} onPress={() => irADetalle(item.id)}>
         <Text style={styles.buttonText}>Ver</Text>
       </TouchableOpacity>
@@ -44,6 +58,14 @@ export default function HomePage() {
     </View>
   );
 
+  if (loading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color="#4CAF50" />
+      </View>
+    );
+  }
+
   const solicitudesAprobadas = solicitudes.filter(s => s.estado === 'aprobado');
   const solicitudesPendientes = solicitudes.filter(s => s.estado === 'pendiente');
   const solicitudesRechazadas = solicitudes.filter(s => s.estado === 'rechazado');
@@ -51,7 +73,6 @@ export default function HomePage() {
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.title}>Documentos Subidos</Text>
-
       {renderTabla('Solicitudes Aprobadas', solicitudesAprobadas)}
       {renderTabla('Solicitudes Pendientes', solicitudesPendientes)}
       {renderTabla('Solicitudes Rechazadas', solicitudesRechazadas)}

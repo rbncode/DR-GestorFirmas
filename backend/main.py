@@ -123,6 +123,8 @@ async def descargar_documento(documento_id: str):
 async def documentos_por_solicitud(solicitud_id: str):
     return await get_documentos_by_solicitud(solicitud_id)
 
+# -- ENDPOINTS FIRMAS
+
 @app.post("/api/documentos/firmar")
 async def firmar_un_documento(firma: FirmaDocumento):
     ok = await firmar_documento(firma)

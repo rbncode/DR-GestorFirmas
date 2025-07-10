@@ -1,16 +1,16 @@
-import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  Alert,
-  Modal,
-  TextInput
-} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
 import * as DocumentPicker from 'expo-document-picker';
-import { Ionicons } from '@expo/vector-icons';
+import React, { useState } from 'react';
+import {
+  Alert,
+  Modal,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
+} from 'react-native';
 
 export default function UploadFileEmpleado() {
   const [supervisor, setSupervisor] = useState<string>('');
@@ -39,14 +39,98 @@ export default function UploadFileEmpleado() {
     }
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!supervisor || !tipoSolicitud || !titulo || !descripcion || !selectedFile) {
       Alert.alert('Error', 'Por favor completa todos los campos y sube el archivo');
       return;
     }
+    
+    try {
+      // 1. Crear la solicitud sin documentoId primero
+      const solicitudBody = {
+        titulo,
+        categoria: tipoSolicitud,
+        descripcion,
+        fecha: new Date().toISOString(),
+        empleado: {
+          nombre: "Empleado Ejemplo",
+          correo: "empleado@ejemplo.com",
+          rol: "empleado"
+        },
+        supervisor: {
+          nombre: supervisor,
+          correo: "supervisor@ejemplo.com", 
+          rol: "supervisor"
+        },
+        hr: {
+          nombre: "RH",
+          correo: "rh@ejemplo.com",
+          rol: "hr"
+        },
+        documentoId: "" // Dejarlo vacío inicialmente
+      };
+    
+      console.log('Enviando solicitud:', JSON.stringify(solicitudBody, null, 2));
+    
+      const solicitudRes = await fetch('http://localhost:8080/api/solicitudes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(solicitudBody)
+      });
+    
+      if (!solicitudRes.ok) {
+        const errorText = await solicitudRes.text();
+        console.error('Error response:', errorText);
+        throw new Error(`Error al crear la solicitud: ${solicitudRes.status}`);
+      }
+    
+      const solicitud = await solicitudRes.json();
+      console.log('Solicitud creada:', solicitud);
+    
+      // 2. Subir el archivo PDF
+      const fileAsset = selectedFile.assets[0];
+      const formData = new FormData();
+      formData.append('solicitud_id', solicitud.id);
+      formData.append('filename', fileAsset.name);
+      formData.append('file', {
+        uri: fileAsset.uri,
+        name: fileAsset.name,
+        type: 'application/pdf'
+      } as any);
 
-    // Aquí iría la petición al backend en el futuro
-    setConfirmModalVisible(true);
+      console.log(solicitud.id)
+      console.log(fileAsset.name)
+      console.log({
+        uri: fileAsset.uri,
+        name: fileAsset.name,
+        type: 'application/pdf'
+      } as any)
+
+      const uploadRes = await fetch('http://localhost:8080/api/agregarPDF', {
+        method: 'POST',
+        body: formData // NO incluir Content-Type header para multipart
+      });
+    
+      if (!uploadRes.ok) {
+        const errorText = await uploadRes.text();
+        console.error('Error uploading file:', errorText);
+        throw new Error(`Error al subir el PDF: ${uploadRes.status}`);
+      }
+    
+      console.log('Archivo subido exitosamente');
+      setConfirmModalVisible(true);
+      
+      // Limpiar el formulario
+      setSupervisor('');
+      setTipoSolicitud('');
+      setTitulo('');
+      setDescripcion('');
+      setSelectedFile(null);
+      
+    } catch (error) {
+      console.error('Error completo:', error);
+      Alert.alert('Error', error.message || 'No se pudo enviar la solicitud');
+    }
   };
 
   const handleConfirm = () => {

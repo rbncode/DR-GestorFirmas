@@ -21,6 +21,11 @@ class Usuario(BaseModel):
     rol: RolUsuario
     contraseña: str
 
+class UsuarioSolicitud(BaseModel):
+    nombre: str
+    correo: str
+    rol: RolUsuario
+
 class UsuarioWithId(Usuario):
     id: str
 
@@ -40,9 +45,9 @@ class SolicitudCreate(BaseModel):
     categoria: str
     descripcion: str
     fecha: str
-    empleado: Usuario
-    supervisor: Usuario
-    hr: Usuario
+    empleado: UsuarioSolicitud
+    supervisor: UsuarioSolicitud
+    hr: UsuarioSolicitud
     documentoId: str
 
 class DocumentoFirmado(BaseModel):

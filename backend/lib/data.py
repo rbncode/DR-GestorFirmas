@@ -2,7 +2,7 @@ from typing import List, Optional
 from bson import ObjectId
 from bson.errors import InvalidId
 from datetime import datetime
-from .modelos import Usuario, UsuarioWithId, Solicitudes, SolicitudCreate, DocumentoFirmado, DocumentoUpload, FirmaDocumento
+from .modelos import Usuario, UsuarioSolicitud, UsuarioWithId, Solicitudes, SolicitudCreate, DocumentoFirmado, DocumentoUpload, FirmaDocumento
 from .mongodb import mongodb
 from .gridfs_manager import gridfs
 
@@ -17,9 +17,24 @@ def from_mongodb_solicitud(doc: dict) -> Solicitudes:
         categoria=doc['categoria'],
         descripcion=doc['descripcion'],
         fecha=doc['fecha'],
-        empleado=Usuario(**doc['empleado']),
-        supervisor=Usuario(**doc['supervisor']),
-        hr=Usuario(**doc['hr']),
+        empleado=Usuario(
+            nombre=doc['empleado']['nombre'],
+            correo=doc['empleado']['correo'],
+            rol=doc['empleado']['rol'],
+            contraseña=doc['empleado'].get('contraseña', '')  # Usar get() con valor por defecto
+        ),
+        supervisor=Usuario(
+            nombre=doc['supervisor']['nombre'],
+            correo=doc['supervisor']['correo'],
+            rol=doc['supervisor']['rol'],
+            contraseña=doc['supervisor'].get('contraseña', '')
+        ),
+        hr=Usuario(
+            nombre=doc['hr']['nombre'],
+            correo=doc['hr']['correo'],
+            rol=doc['hr']['rol'],
+            contraseña=doc['hr'].get('contraseña', '')
+        ),
         documentoId=doc['documentoId']
     )
 
@@ -75,9 +90,32 @@ async def add_solicitud(solicitud_data: SolicitudCreate) -> Solicitudes:
         
         result = collection.insert_one(solicitud_dict)
         
+        # Construir el objeto Solicitudes convirtiendo UsuarioSolicitud a Usuario
         return Solicitudes(
             id=str(result.inserted_id),
-            **solicitud_dict
+            titulo=solicitud_dict['titulo'],
+            categoria=solicitud_dict['categoria'],
+            descripcion=solicitud_dict['descripcion'],
+            fecha=solicitud_dict['fecha'],
+            empleado=Usuario(
+                nombre=solicitud_dict['empleado']['nombre'],
+                correo=solicitud_dict['empleado']['correo'],
+                rol=solicitud_dict['empleado']['rol'],
+                contraseña=""  # Contraseña vacía por defecto
+            ),
+            supervisor=Usuario(
+                nombre=solicitud_dict['supervisor']['nombre'],
+                correo=solicitud_dict['supervisor']['correo'],
+                rol=solicitud_dict['supervisor']['rol'],
+                contraseña=""  # Contraseña vacía por defecto
+            ),
+            hr=Usuario(
+                nombre=solicitud_dict['hr']['nombre'],
+                correo=solicitud_dict['hr']['correo'],
+                rol=solicitud_dict['hr']['rol'],
+                contraseña=""  # Contraseña vacía por defecto
+            ),
+            documentoId=solicitud_dict['documentoId']
         )
     except Exception as error:
         print(f"Error adding solicitud: {error}")
