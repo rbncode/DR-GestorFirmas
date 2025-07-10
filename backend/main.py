@@ -1,4 +1,9 @@
+import io
+from tkinter import Canvas
+from PyPDF2 import PdfReader, PdfWriter
 from fastapi import Body, FastAPI, HTTPException, UploadFile, File, Form
+from reportlab.lib.pagesizes import letter
+from fastapi.responses import StreamingResponse
 from lib.data import (
     get_usuarios, add_usuario, upload_documento, get_usuario_by_id, delete_usuario, get_usuario_by_correo,
     get_solicitudes, get_solicitud_by_id, add_solicitud, delete_solicitud, update_solicitud,
@@ -146,3 +151,46 @@ async def listar_documentos_firmados():
 @app.get("/api/documentos/pendientes")
 async def listar_documentos_pendientes():
     return await get_documentos_pendientes()
+
+@app.post("/api/documentos/firmar-pdf")
+async def firmar_pdf_simple(
+    nombre: str = Form(...),
+    rut: str = Form(...),
+    correo: str = Form(...),
+    file: UploadFile = File(...)
+):
+    # Leer PDF original
+    original_pdf = await file.read()
+    reader = PdfReader(io.BytesIO(original_pdf))
+    writer = PdfWriter()
+    for page in reader.pages:
+        writer.add_page(page)
+
+
+    # Crear página de firma
+    packet = io.BytesIO()
+    can = Canvas.Canvas(packet, pagesize=letter)
+    can.setFont("Helvetica", 12)
+    can.drawString(100, 700, "FIRMA ELECTRÓNICA SIMPLE")
+    can.drawString(100, 670, f"Nombre: {nombre}")
+    can.drawString(100, 650, f"RUT: {rut}")
+    can.drawString(100, 630, f"Correo: {correo}")
+    can.drawString(100, 610, "Fecha de firma: ____________________")
+    can.save()
+    packet.seek(0)
+    firma_pdf = PdfReader(packet)
+    writer.add_page(firma_pdf.pages[0])
+
+
+    # Guardar PDF firmado en memoria
+    output = io.BytesIO()
+    writer.write(output)
+    output.seek(0)
+
+
+    # Retornar el PDF firmado
+    return StreamingResponse(
+        output,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename=firmado_{file.filename}"}
+    )

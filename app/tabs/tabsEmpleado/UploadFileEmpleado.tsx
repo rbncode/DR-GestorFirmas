@@ -44,9 +44,9 @@ export default function UploadFileEmpleado() {
       Alert.alert('Error', 'Por favor completa todos los campos y sube el archivo');
       return;
     }
-    
+
     try {
-      // 1. Crear la solicitud sin documentoId primero
+      // 1. Crear la solicitud
       const solicitudBody = {
         titulo,
         categoria: tipoSolicitud,
@@ -59,7 +59,7 @@ export default function UploadFileEmpleado() {
         },
         supervisor: {
           nombre: supervisor,
-          correo: "supervisor@ejemplo.com", 
+          correo: "supervisor@ejemplo.com",
           rol: "supervisor"
         },
         hr: {
@@ -67,181 +67,123 @@ export default function UploadFileEmpleado() {
           correo: "rh@ejemplo.com",
           rol: "hr"
         },
-        documentoId: "" // Dejarlo vacío inicialmente
+        documentoId: ""
       };
-    
+
       console.log('Enviando solicitud:', JSON.stringify(solicitudBody, null, 2));
-    
+
       const solicitudRes = await fetch('http://localhost:8080/api/solicitudes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(solicitudBody)
       });
-    
+
       if (!solicitudRes.ok) {
         const errorText = await solicitudRes.text();
-        console.error('Error response:', errorText);
+        console.error('Error al crear solicitud:', errorText);
         throw new Error(`Error al crear la solicitud: ${solicitudRes.status}`);
       }
-    
+
       const solicitud = await solicitudRes.json();
       console.log('Solicitud creada:', solicitud);
-    
+
       // 2. Subir el archivo PDF
       const fileAsset = selectedFile.assets[0];
+      const file = await fetch(fileAsset.uri);
+      const blob = await file.blob();
+
       const formData = new FormData();
       formData.append('solicitud_id', solicitud.id);
       formData.append('filename', fileAsset.name);
-      formData.append('file', {
-        uri: fileAsset.uri,
-        name: fileAsset.name,
-        type: 'application/pdf'
-      } as any);
-
-      console.log(solicitud.id)
-      console.log(fileAsset.name)
-      console.log({
-        uri: fileAsset.uri,
-        name: fileAsset.name,
-        type: 'application/pdf'
-      } as any)
+      formData.append('file', blob, fileAsset.name);
 
       const uploadRes = await fetch('http://localhost:8080/api/agregarPDF', {
         method: 'POST',
-        body: formData // NO incluir Content-Type header para multipart
+        body: formData,
       });
-    
+
       if (!uploadRes.ok) {
         const errorText = await uploadRes.text();
-        console.error('Error uploading file:', errorText);
-        throw new Error(`Error al subir el PDF: ${uploadRes.status}`);
+        console.error('Error subiendo archivo:', errorText);
+        throw new Error(`Error al subir el archivo: ${uploadRes.status}`);
       }
-    
-      console.log('Archivo subido exitosamente');
-      setConfirmModalVisible(true);
-      
-      // Limpiar el formulario
-      setSupervisor('');
-      setTipoSolicitud('');
-      setTitulo('');
-      setDescripcion('');
-      setSelectedFile(null);
-      
-    } catch (error) {
-      console.error('Error completo:', error);
-      Alert.alert('Error', error.message || 'No se pudo enviar la solicitud');
-    }
-  };
 
-  const handleConfirm = () => {
-    setConfirmModalVisible(false);
-    // Aquí podrías navegar con router.push('/home') si usas expo-router
+      console.log('Archivo subido correctamente');
+      setConfirmModalVisible(true);
+    } catch (error) {
+      console.error('Error al enviar:', error);
+      Alert.alert('Error', 'Hubo un problema al enviar la solicitud');
+    }
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Subir Solicitud de Empleado</Text>
+      <Text style={styles.title}>Subir Solicitud</Text>
 
-      {/* Supervisor */}
-      <Text style={styles.label}>Supervisor:</Text>
-      <View style={styles.pickerContainer}>
-        <Picker
-          selectedValue={supervisor}
-          onValueChange={setSupervisor}
-        >
-          <Picker.Item label="Seleccionar..." value="" />
-          <Picker.Item label="Carlos Ruiz" value="Carlos Ruiz" />
-          <Picker.Item label="Ana Gómez" value="Ana Gómez" />
-        </Picker>
-      </View>
-
-      {/* Tipo solicitud */}
-      <Text style={styles.label}>Tipo de Solicitud:</Text>
-      <View style={styles.pickerContainer}>
-        <Picker
-          selectedValue={tipoSolicitud}
-          onValueChange={setTipoSolicitud}
-        >
-          <Picker.Item label="Seleccionar..." value="" />
-          <Picker.Item label="Vacaciones" value="Vacaciones" />
-          <Picker.Item label="Licencia" value="Licencia" />
-        </Picker>
-      </View>
-
-      {/* Título */}
-      <Text style={styles.label}>Título:</Text>
       <TextInput
         style={styles.input}
-        placeholder="Ingrese el título"
+        placeholder="Nombre del Supervisor"
+        value={supervisor}
+        onChangeText={setSupervisor}
+      />
+
+      <Picker
+        selectedValue={tipoSolicitud}
+        onValueChange={(itemValue) => setTipoSolicitud(itemValue)}
+        style={styles.picker}
+      >
+        <Picker.Item label="Selecciona un tipo de solicitud" value="" />
+        <Picker.Item label="Vacaciones" value="vacaciones" />
+        <Picker.Item label="Permiso" value="permiso" />
+        <Picker.Item label="Otro" value="otro" />
+      </Picker>
+
+      <TextInput
+        style={styles.input}
+        placeholder="Título"
         value={titulo}
         onChangeText={setTitulo}
       />
 
-      {/* Descripción */}
-      <Text style={styles.label}>Descripción:</Text>
       <TextInput
-        style={[styles.input, { height: 100 }]}
-        placeholder="Ingrese la descripción"
-        multiline
+        style={[styles.input, styles.textArea]}
+        placeholder="Descripción"
         value={descripcion}
         onChangeText={setDescripcion}
+        multiline
+        numberOfLines={4}
       />
 
-      {/* Botón subir archivo */}
-      <TouchableOpacity style={styles.button} onPress={() => setModalVisible(true)}>
-        <Text style={styles.buttonText}>Subir Documento</Text>
+      <TouchableOpacity onPress={() => setModalVisible(true)} style={styles.fileButton}>
+        <Ionicons name="attach" size={24} color="white" />
+        <Text style={styles.fileButtonText}>
+          {selectedFile ? selectedFile.assets[0].name : 'Seleccionar archivo PDF'}
+        </Text>
       </TouchableOpacity>
 
-      {/* Mostrar archivo seleccionado */}
-      {selectedFile &&
-        selectedFile.assets &&
-        selectedFile.assets.length > 0 && (
-          <View style={styles.fileInfo}>
-            <Ionicons name="document" size={24} color="red" />
-            <Text style={{ marginLeft: 8 }}>
-              {selectedFile.assets[0].name}
-            </Text>
-          </View>
-      )}
-
-      {/* Botón enviar */}
-      <TouchableOpacity style={styles.button} onPress={handleSubmit}>
-        <Text style={styles.buttonText}>Enviar Solicitud</Text>
+      <TouchableOpacity onPress={handleSubmit} style={styles.submitButton}>
+        <Text style={styles.submitButtonText}>Enviar Solicitud</Text>
       </TouchableOpacity>
 
-      {/* Modal para subir archivo */}
-      <Modal visible={modalVisible} animationType="slide" transparent>
+      {/* Modal de selección de archivo */}
+      <Modal visible={modalVisible} transparent animationType="slide">
         <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Subir documento PDF</Text>
-            <TouchableOpacity
-              style={styles.button}
-              onPress={handleSelectFile}
-            >
-              <Text style={styles.buttonText}>Elegir archivo PDF</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.button, { backgroundColor: '#999' }]}
-              onPress={() => setModalVisible(false)}
-            >
-              <Text style={styles.buttonText}>Cancelar</Text>
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity onPress={handleSelectFile} style={styles.modalButton}>
+            <Text style={styles.modalButtonText}>Seleccionar PDF</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.modalButton}>
+            <Text style={styles.modalButtonText}>Cancelar</Text>
+          </TouchableOpacity>
         </View>
       </Modal>
 
-      {/* Modal confirmación */}
-      <Modal visible={confirmModalVisible} animationType="slide" transparent>
+      {/* Modal de confirmación */}
+      <Modal visible={confirmModalVisible} transparent animationType="slide">
         <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Solicitud enviada correctamente</Text>
-            <TouchableOpacity
-              style={styles.button}
-              onPress={handleConfirm}
-            >
-              <Text style={styles.buttonText}>Aceptar</Text>
-            </TouchableOpacity>
-          </View>
+          <Text style={styles.confirmText}>¡Solicitud enviada con éxito!</Text>
+          <TouchableOpacity onPress={() => setConfirmModalVisible(false)} style={styles.modalButton}>
+            <Text style={styles.modalButtonText}>Cerrar</Text>
+          </TouchableOpacity>
         </View>
       </Modal>
     </View>
@@ -249,65 +191,17 @@ export default function UploadFileEmpleado() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 20,
-    backgroundColor: '#f2f2f2',
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 12,
-    textAlign: 'center',
-  },
-  label: {
-    marginTop: 12,
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  pickerContainer: {
-    backgroundColor: '#fff',
-    marginVertical: 8,
-    borderRadius: 8,
-    overflow: 'hidden',
-  },
-  input: {
-    backgroundColor: '#fff',
-    padding: 12,
-    marginVertical: 8,
-    borderRadius: 8,
-  },
-  button: {
-    backgroundColor: '#4CAF50',
-    padding: 14,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginTop: 16,
-  },
-  buttonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-  },
-  fileInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 12,
-  },
-  modalContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    backgroundColor: 'rgba(0,0,0,0.4)',
-  },
-  modalContent: {
-    backgroundColor: '#fff',
-    padding: 20,
-    margin: 20,
-    borderRadius: 10,
-    alignItems: 'center',
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 20,
-  },
+  container: { padding: 20, flex: 1, backgroundColor: '#fff' },
+  title: { fontSize: 24, fontWeight: 'bold', marginBottom: 20 },
+  input: { borderWidth: 1, borderColor: '#ccc', padding: 10, marginBottom: 15, borderRadius: 5 },
+  textArea: { height: 100 },
+  picker: { marginBottom: 15 },
+  fileButton: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#007AFF', padding: 10, borderRadius: 5, marginBottom: 20 },
+  fileButtonText: { color: 'white', marginLeft: 10 },
+  submitButton: { backgroundColor: '#28A745', padding: 15, borderRadius: 5 },
+  submitButtonText: { color: 'white', textAlign: 'center', fontWeight: 'bold' },
+  modalContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.5)' },
+  modalButton: { backgroundColor: '#fff', padding: 15, borderRadius: 5, marginTop: 10 },
+  modalButtonText: { color: '#007AFF', fontWeight: 'bold' },
+  confirmText: { backgroundColor: '#fff', padding: 20, fontSize: 18, borderRadius: 5 },
 });
